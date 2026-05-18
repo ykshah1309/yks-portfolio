@@ -218,7 +218,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   try {
     const { text } = await generateText({
-      model: 'meta/llama-3.3-70b-instruct',
+      model: 'meta/llama-3.3-70b',
       system: SYSTEM_PROMPT,
       prompt: q,
       maxOutputTokens: 350,

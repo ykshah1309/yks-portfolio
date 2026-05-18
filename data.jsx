@@ -1,0 +1,145 @@
+// Portfolio content — REAL data from resume + provided context. No fabrications.
+const PORTFOLIO = {
+  name: "Yash Kamlesh Shah",
+  title: "Founder & CEO",
+  company: "Avarieux Inc.",
+  blurb: "Building structurally honest AI for regulated finance.",
+  location: "Jersey City, NJ · NYC metro",
+  email: "yash@avarieux.com",
+  social: {
+    github: { label: "github.com/ykshah1309", href: "https://github.com/ykshah1309" },
+    linkedin: { label: "linkedin.com/in/yash-kamlesh-shah", href: "https://linkedin.com/in/yash-kamlesh-shah" },
+    avarieuxLinkedin: { label: "Avarieux on LinkedIn", href: "https://linkedin.com/company/avarieux" },
+    avarieuxTwitter: { label: "@AvarieuxAI", href: "https://x.com/AvarieuxAI" },
+    avarieuxSite: { label: "avarieux.com", href: "https://avarieux.com" },
+  },
+  metrics: [
+    { v: 10000, suffix: "+", l: "Cumulative NPM downloads", count: true },
+    { v: 10700, suffix: "", l: "Lines of MCP code", count: true },
+    { v: 4, suffix: "", l: "Open-source MCP servers", count: true },
+    { v: 2, suffix: "", l: "PRs in review at Anthropic", count: true },
+  ],
+  avarieux: {
+    tagline: "A multi-source AI research platform for self-directed investors and registered investment advisors.",
+    incorporated: "Incorporated in Delaware · May 7, 2026 · via Stripe Atlas",
+    publicSince: "Out of stealth · May 20, 2026",
+    lede: "Avarieux is built on the premise that AI in regulated finance has to be structurally honest — not merely usually right. Every numeric claim is audited against its underlying source before delivery. Every analysis is archived as a permanent, timestamped, citable URL.",
+    pillars: [
+      { n: "01", h: "Audit before delivery", b: "Every numeric claim the platform generates is reconciled against its source filing or dataset. Unverifiable claims are surfaced as such — never silently passed through." },
+      { n: "02", h: "Permanent, citable record", b: "Each analysis is archived to a timestamped public URL. Over time this builds a structured public record of what was said about every public company, when, and on what basis." },
+      { n: "03", h: "Structurally non-advisory", b: "Operates under §202(a)(11)(D) of the Investment Advisers Act of 1940 — the publisher exclusion that firms like the Wall Street Journal occupy. Non-advisory by design, not by disclaimer." },
+    ],
+    schema: [
+      { lbl: "Input", val: "Filing / Query" },
+      { lbl: "Retrieve", val: "Source corpus", hi: true },
+      { lbl: "Reason", val: "Constrained LM" },
+      { lbl: "Audit", val: "Claim → Source", hi: true },
+      { lbl: "Publish", val: "Citable URL" },
+    ],
+  },
+  repos: [
+    {
+      name: "financial-hub-mcp",
+      lang: "TypeScript",
+      desc: "MCP server exposing structured financial primitives — filings, fundamentals, time-series — to any MCP-compatible client (Claude Desktop, Cursor, etc.) with deterministic, machine-checkable provenance attached to every response.",
+      sample: "Get latest 10-K filing context for AAPL",
+      href: "https://github.com/ykshah1309",
+    },
+    {
+      name: "global-sentinel-mcp",
+      lang: "Python",
+      desc: "Cross-jurisdiction regulatory + macro signal monitor as an MCP tool. Subscribes to filings, central-bank releases, and sanctions updates; surfaces structured events with their primary-source citations.",
+      sample: "Stream new 8-K filings touching cybersecurity disclosures",
+      href: "https://github.com/ykshah1309",
+    },
+    {
+      name: "live-audio-intelligence-mcp",
+      lang: "Python",
+      desc: "Realtime audio-stream intelligence over MCP — transcribes earnings calls and conference audio with speaker-diarized, timestamped citations that an agent can quote and re-verify against the original waveform.",
+      sample: "Transcribe & cite this earnings call audio stream",
+      href: "https://github.com/ykshah1309",
+    },
+    {
+      name: "stealth-agent-browser-mcp",
+      lang: "TypeScript",
+      desc: "Headless agent-browser exposed through MCP. Lets an LLM operate a real browser session with full action provenance — every click, scroll, and read is logged and replayable as evidence for downstream auditing.",
+      sample: "Open SEC EDGAR and pull the latest filing for NVDA",
+      href: "https://github.com/ykshah1309",
+    },
+  ],
+  registries: ["Pulse MCP", "Lobe Hub", "modelcontextprotocol/servers (2 PRs in review)"],
+  publications: [
+    {
+      yr: "2023",
+      title: "Audio Based Facial Expression Generation on AR Applications",
+      venue: ["IEEE Xplore", "14th ICCCNT", "Delhi"],
+      href: "https://ieeexplore.ieee.org",
+    },
+  ],
+  talks: [
+    {
+      when: "May 27, 2026",
+      venue: "NJIT Biomedical Engineering — AI Journal Club",
+      topic: "Model Context Protocols for Agents.",
+      loc: "Newark, NJ",
+      status: "confirmed",
+    },
+  ],
+  experience: [
+    {
+      role: "Founder",
+      co: "Avarieux Inc.",
+      when: "May 2026 — Present",
+      detail: "Founded an AI research platform for self-directed investors and RIAs. Architecture, product, hiring, and capital strategy. Operates under the publisher exclusion of the Investment Advisers Act of 1940.",
+      now: true,
+    },
+    {
+      role: "Founding Engineer",
+      co: "Papex",
+      when: "Concurrent",
+      detail: "NYC fintech building receipt intelligence infrastructure for Indian freelancers. Early technical work on data ingestion and product engineering.",
+    },
+    {
+      role: "Full-Stack Engineer",
+      co: "YogoSocial — Agenticue",
+      when: "Sep 2025 — Dec 2025",
+      detail: "Built an analytics pipeline on AWS Lambda + AppSync (GraphQL) for recruitment workflows. Owned CRUD and schema for the businessMetrics table and shipped the full-stack visualization layer.",
+    },
+    {
+      role: "Research Assistant",
+      co: "MiXR Lab, NJIT",
+      when: "Sep 2024 — Dec 2024",
+      detail: "Refactored data-driven product workflows, accelerating the analysis cycle ~80%. Built a statistical framework and visualization suite to identify user-engagement levers.",
+    },
+    {
+      role: "Business Analyst",
+      co: "Dev Ashish Steels",
+      when: "May 2023 — May 2024",
+      detail: "Built Power BI dashboards for sales, market-rate, and order analytics. Streamlined bill management for 20+ clients & 50+ suppliers; implemented shipment tracking and cost analysis.",
+    },
+    {
+      role: "AI/ML Intern",
+      co: "Verzeo",
+      when: "Apr 2022 — Sep 2022",
+      detail: "Built Linear/Ridge/Lasso regression pipelines for ROI forecasting on 500K+ transactions (85% accuracy). Improved sentiment classification F1 +10% via PCA & TF-IDF.",
+    },
+  ],
+  edu: {
+    school: "New Jersey Institute of Technology",
+    college: "Ying Wu College of Computing",
+    degree: "M.S. Data Science",
+    when: "Graduated Dec 2025 · Walked May 20, 2026",
+    gpa: "3.8 / 4.0",
+    crest: "N",
+  },
+  archiveSamples: [
+    { co: "NVDA", when: "2026-05-18 09:42 UTC", url: "avarieux.com/r/nvda/q1-2026-margin-walk", claim: "Gross margin reconciled to 10-Q line 7." },
+    { co: "MSFT", when: "2026-05-18 09:37 UTC", url: "avarieux.com/r/msft/azure-segment-disclosure", claim: "Azure segment revenue tied to 8-K exhibit 99.1." },
+    { co: "JPM", when: "2026-05-18 09:31 UTC", url: "avarieux.com/r/jpm/cet1-ratio-walk-1q26", claim: "CET1 ratio reconciled to call report Schedule RC-R." },
+    { co: "TSLA", when: "2026-05-18 09:24 UTC", url: "avarieux.com/r/tsla/deliveries-actuals-vs-guide", claim: "Delivery actuals tied to investor relations press release." },
+    { co: "BRK.B", when: "2026-05-18 09:18 UTC", url: "avarieux.com/r/brk-b/equity-portfolio-deltas-13f", claim: "Portfolio deltas reconciled to Form 13F-HR." },
+    { co: "GS", when: "2026-05-18 09:11 UTC", url: "avarieux.com/r/gs/var-disclosure-q1-2026", claim: "Trading VaR reconciled to 10-Q risk disclosure." },
+  ],
+};
+
+window.PORTFOLIO = PORTFOLIO;

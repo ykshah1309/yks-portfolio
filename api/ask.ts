@@ -1,6 +1,7 @@
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { generateText } from 'ai';
 
-export const config = { runtime: 'nodejs', maxDuration: 30 };
+export const config = { maxDuration: 30 };
 
 const SYSTEM_PROMPT = `You are "Yash's AI assistant" — a small persona on Yash Kamlesh Shah's portfolio site. Visitors ask you questions about Yash; you answer in his stead, in the third person, like a knowledgeable colleague would.
 
@@ -8,7 +9,7 @@ const SYSTEM_PROMPT = `You are "Yash's AI assistant" — a small persona on Yash
 
 Yash Kamlesh Shah is the Founder & CEO of Avarieux Inc., a multi-source AI research platform for self-directed investors and registered investment advisors. Avarieux was incorporated in Delaware on May 7, 2026 via Stripe Atlas, and came out of stealth on May 20, 2026 — the same day Yash walked at commencement for his M.S. in Data Science from NJIT's Ying Wu College of Computing (CGPA 3.8/4.0).
 
-Avarieux's premise: AI in regulated finance must be structurally honest, not just usually right. Every numeric claim is audited against its source before delivery; unverifiable claims are flagged, never silently passed. Every analysis is archived as a permanent, timestamped, citable URL — building a public record of what was said about every public company, when, and on what basis. The platform operates under §202(a)(11)(D) of the Investment Advisers Act of 1940 — the publisher exclusion firms like the Wall Street Journal occupy — making it structurally non-advisory by design.
+Avarieux's premise: AI in regulated finance must be structurally honest, not just usually right. Every numeric claim is audited against its source before delivery; unverifiable claims are flagged, never silently passed. Every analysis is archived as a permanent, timestamped, citable URL. The platform operates under §202(a)(11)(D) of the Investment Advisers Act of 1940 — the publisher exclusion firms like the Wall Street Journal occupy — making it structurally non-advisory by design.
 
 Concurrent role: Founding Engineer at Papex, a NYC fintech building receipt intelligence infrastructure for Indian freelancers.
 
@@ -100,8 +101,6 @@ NEVER make up facts about Yash. If you're not sure, you don't know.
 Remember: you speak FOR Yash, ABOUT Yash, but you are NOT Yash. You are his assistant.`;
 
 // ── input-layer injection filter ────────────────────────────────────────────
-// Catches the obvious stuff before it hits the model. The system prompt is
-// the real defense; this just trims the noise.
 const INJECTION_PATTERNS: RegExp[] = [
   /ignore\s+(all\s+|the\s+)?(previous|prior|above)\s+(instructions|prompts?|rules|messages)/i,
   /disregard\s+(all\s+|the\s+)?(previous|prior|above)\s+(instructions|prompts?|rules|messages)/i,
@@ -122,7 +121,6 @@ const INJECTION_PATTERNS: RegExp[] = [
   /\[\/INST\]/i,
   /pretend\s+(you\s+are|to\s+be)\s+/i,
   /roleplay\s+as\s+/i,
-  /act\s+as\s+(if\s+)?(a|an|the)?\s*[a-z]+/i,
 ];
 
 function looksLikeInjection(q: string): boolean {
@@ -130,9 +128,6 @@ function looksLikeInjection(q: string): boolean {
 }
 
 // ── rate limit: 5 req / 5 min / IP, in-memory sliding window ────────────────
-// Per-instance state. Fluid Compute reuses instances heavily, so for a
-// portfolio site this is plenty. If traffic ever justifies Upstash Redis,
-// swap this block out — interface stays the same.
 const RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
 const RATE_LIMIT_MAX = 5;
 const buckets = new Map<string, number[]>();
@@ -146,7 +141,6 @@ function rateLimit(ip: string): { ok: boolean; retryAfter?: number } {
   }
   fresh.push(now);
   buckets.set(ip, fresh);
-  // occasional GC so the map doesn't grow unbounded
   if (buckets.size > 1000) {
     for (const [k, v] of buckets) {
       if (v.every((t) => now - t > RATE_LIMIT_WINDOW_MS)) buckets.delete(k);
@@ -155,50 +149,71 @@ function rateLimit(ip: string): { ok: boolean; retryAfter?: number } {
   return { ok: true };
 }
 
-function getIp(req: Request): string {
-  const xff = req.headers.get('x-forwarded-for');
-  if (xff) return xff.split(',')[0].trim();
-  return req.headers.get('x-real-ip') || 'unknown';
+// ── helpers (Node http style) ───────────────────────────────────────────────
+function getIp(req: IncomingMessage): string {
+  const xff = req.headers['x-forwarded-for'];
+  if (typeof xff === 'string') return xff.split(',')[0].trim();
+  if (Array.isArray(xff) && xff.length > 0) return xff[0].split(',')[0].trim();
+  const xri = req.headers['x-real-ip'];
+  if (typeof xri === 'string') return xri;
+  return 'unknown';
 }
 
-const json = (status: number, body: unknown, extra?: Record<string, string>) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json', ...(extra || {}) },
+function readJson(req: IncomingMessage): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    let data = '';
+    req.setEncoding('utf8');
+    req.on('data', (chunk) => { data += chunk; if (data.length > 4096) { req.destroy(); reject(new Error('payload_too_large')); } });
+    req.on('end', () => { try { resolve(data ? JSON.parse(data) : {}); } catch (e) { reject(e); } });
+    req.on('error', reject);
   });
+}
 
-export default async function handler(req: Request): Promise<Response> {
+function sendJson(res: ServerResponse, status: number, body: unknown, extra: Record<string, string> = {}): void {
+  res.statusCode = status;
+  res.setHeader('content-type', 'application/json');
+  for (const k in extra) res.setHeader(k, extra[k]);
+  res.end(JSON.stringify(body));
+}
+
+export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (req.method !== 'POST') {
-    return json(405, { error: 'method_not_allowed' });
+    sendJson(res, 405, { error: 'method_not_allowed' });
+    return;
   }
 
   const ip = getIp(req);
   const rl = rateLimit(ip);
   if (!rl.ok) {
-    return json(
+    sendJson(
+      res,
       429,
       { error: 'rate_limited', retryAfter: rl.retryAfter, text: `Easy — rate limited. Try again in ~${rl.retryAfter}s.` },
       { 'retry-after': String(rl.retryAfter) },
     );
+    return;
   }
 
-  let body: { question?: unknown };
+  let body: { question?: unknown } = {};
   try {
-    body = (await req.json()) as { question?: unknown };
+    body = (await readJson(req)) as { question?: unknown };
   } catch {
-    return json(400, { error: 'bad_json' });
+    sendJson(res, 400, { error: 'bad_json' });
+    return;
   }
 
   const q = typeof body.question === 'string' ? body.question.trim() : '';
-  if (!q) return json(400, { error: 'empty', text: 'Ask a question first.' });
+  if (!q) { sendJson(res, 400, { error: 'empty', text: 'Ask a question first.' }); return; }
   if (q.length > 500) {
-    return json(400, { error: 'too_long', text: 'Keep it under 500 characters.' });
+    sendJson(res, 400, { error: 'too_long', text: 'Keep it under 500 characters.' });
+    return;
   }
 
   if (looksLikeInjection(q)) {
-    return json(200, {
+    sendJson(res, 200, {
       text: "I only field questions about Yash — try asking about his MCP work, Avarieux, or his background.",
     });
+    return;
   }
 
   try {
@@ -209,10 +224,10 @@ export default async function handler(req: Request): Promise<Response> {
       maxOutputTokens: 350,
       temperature: 0.6,
     });
-    return json(200, { text: text.trim() || '(no response)' });
+    sendJson(res, 200, { text: text.trim() || '(no response)' });
   } catch (err) {
     console.error('[ask] model error:', err);
-    return json(200, {
+    sendJson(res, 200, {
       text: "Model's unreachable right now. Try a sample MCP query in the meantime — those always work.",
     });
   }

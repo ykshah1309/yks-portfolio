@@ -182,28 +182,39 @@ function Sandbox() {
     reset();
     const t = tokenRef.current;
     try {
-      await typeOut(`$ avarieux.research <<< "${q}"`, "prompt", 4);
-      append({ kind: "dim", text: "[policy] structurally-honest mode · claims must be source-anchored" });
-      await new Promise((r) => setTimeout(r, 250));
-      append({ kind: "dim", text: "[claude-haiku-4-5] streaming…" });
+      await typeOut(`$ yash.assistant <<< "${q}"`, "prompt", 4);
+      append({ kind: "dim", text: "[policy] scope-locked to Yash · injection-filtered · rate-limited" });
+      await new Promise((r) => setTimeout(r, 200));
+      append({ kind: "dim", text: "[llama-3.3-70b · vercel ai gateway] thinking…" });
 
-      const systemHints = `You are an Avarieux research assistant. House rules: (1) be concise — no more than ~6 short lines. (2) Treat numeric or factual claims as STRUCTURALLY HONEST: if you cannot tie a number to a specific primary source, you must flag it as "[UNVERIFIED]" inline rather than asserting it. (3) End with a 1-2 line "provenance:" block listing source types you would cite (e.g. "10-K Item 7", "8-K Item 1.05", "OFAC SDN delta", "press release"). (4) Do not invent specific filing IDs, CIKs, or numbers. (5) Plain text, no markdown.`;
       let answer = "";
+      let warn = false;
       try {
-        answer = await window.claude.complete({
-          messages: [
-            { role: "user", content: `${systemHints}\n\nUser query: ${q}` },
-          ],
+        const resp = await fetch("/api/ask", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ question: q }),
         });
+        const data = await resp.json().catch(() => ({}));
+        if (resp.status === 429) {
+          answer = data.text || "Easy — rate limited. Try again shortly.";
+          warn = true;
+        } else if (!resp.ok) {
+          answer = data.text || "Couldn't reach the model. Try a sample MCP query in the meantime.";
+          warn = true;
+        } else {
+          answer = data.text || "(no response)";
+        }
       } catch (e) {
-        answer = "[sandbox] live model is rate-limited right now. Try a sample query — the provenance behavior is identical.";
+        answer = "Network error reaching the assistant. Try a sample MCP query — those always work.";
+        warn = true;
       }
       if (tokenRef.current !== t) return;
       const trimmed = (answer || "").toString().trim();
       const parts = trimmed.split(/\n+/);
       for (const ln of parts) {
         if (tokenRef.current !== t) return;
-        await typeOut(ln, /unverified|cannot|unable/i.test(ln) ? "warn" : "out", 4);
+        await typeOut(ln, warn ? "warn" : "out", 4);
       }
     } finally {
       if (tokenRef.current === t) setRunning(false);
@@ -220,8 +231,8 @@ function Sandbox() {
 
         <p className="sb-lede reveal">
           A working terminal against the four MCP servers I authored. Pre-baked sample queries always work; the
-          <strong> ask anything</strong> input runs your query through a structurally-honest research prompt — claims it
-          cannot anchor to a source are flagged <code>[UNVERIFIED]</code> rather than asserted.
+          <strong> ★ ask Yash</strong> tab is a small AI assistant that answers visitor questions about Yash in his stead —
+          scope-locked, injection-filtered, rate-limited. Powered by <code>llama-3.3-70b</code> via Vercel AI Gateway.
         </p>
 
         <div className="sb-frame reveal">
@@ -251,7 +262,7 @@ function Sandbox() {
               onClick={() => { if (!running) setAskMode((v) => !v); }}
               disabled={running}
             >
-              ★ ask anything
+              ★ ask yash
             </button>
           </div>
 
@@ -284,26 +295,27 @@ function Sandbox() {
               )}
               {askMode && (
                 <>
-                  <div className="sb-side-h">Ask anything</div>
+                  <div className="sb-side-h">Ask Yash anything</div>
                   <textarea
                     className="sb-ask"
                     rows="5"
-                    placeholder="e.g. What did NVDA say about gross margin in their last filing?"
+                    placeholder="e.g. What does Yash do at Avarieux? · Has he built any MCP servers? · Can he fix my bike?"
                     value={askInput}
                     onChange={(e) => setAskInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) runAsk(); }}
                     disabled={running}
+                    maxLength={500}
                   />
                   <button
                     className="sb-run"
                     onClick={runAsk}
                     disabled={running || !askInput.trim()}
                   >
-                    {running ? "running…" : "▸ run (⌘↵)"}
+                    {running ? "thinking…" : "▸ ask (⌘↵)"}
                   </button>
                   <div className="sb-hint">
-                    Live calls go through claude-haiku-4-5 with an Avarieux-style policy prompt. Don't trust this for
-                    actual investment decisions — that's literally the point of the policy.
+                    Yash's AI assistant — answers about him in his stead. Llama 3.3 70B via Vercel AI Gateway.
+                    Scope-locked, injection-filtered, 5 req / 5 min per IP. Not Yash himself — he sleeps occasionally.
                   </div>
                 </>
               )}
